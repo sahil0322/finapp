@@ -1,4 +1,4 @@
-# FinVault – Financial Management Banking App
+# Finapp – Financial Management Banking App
 
 A full-stack personal finance management web application built with Node.js, Express, SQLite, and Tailwind CSS. Track income, expenses, set budgets, visualize spending, and manage your financial health — all in one clean, responsive dashboard.
 
@@ -168,7 +168,7 @@ CREATE TABLE transactions (
 
 Built for the Financial Management Banking App – Beginner Track
 
-**Team Size:** Solo 
+ Solo 
 
 ---
 

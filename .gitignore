@@ -1,0 +1,48 @@
+
+node_modules/
+
+.env
+.env.local
+.env.development
+.env.production
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Build / cache
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+
+# Uploads / generated files
+uploads/
+temp/
+tmp/
+
+# Coverage
+coverage/
+
+# Optional database dumps
+*.sqlite
+*.db
+*.dump

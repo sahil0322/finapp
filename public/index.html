@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinVault – Financial Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['DM Serif Display', 'serif'],
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' },
+            rose:    { 400: '#fb7185', 500: '#f43f5e' },
+            slate:   { 850: '#0f172a' },
+            gold:    { DEFAULT: '#f5c842', dark: '#d4a017' }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+          },
+          keyframes: {
+            fadeIn:  { from: { opacity: 0 }, to: { opacity: 1 } },
+            slideUp: { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .font-display { font-family: 'DM Serif Display', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    .animate-slide-up { animation: slideUp 0.35s ease-out; }
+    @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    .gradient-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+    .income-gradient { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); }
+    .expense-gradient { background: linear-gradient(135deg, #881337 0%, #9f1239 100%); }
+    .balance-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%); }
+    .gold-accent { color: #f5c842; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+    .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.8; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .nav-link.active { color: #f5c842; }
+    .nav-link.active svg { color: #f5c842; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; transition: all 0.3s ease; }
+    .modal-bg { backdrop-filter: blur(4px); background: rgba(0,0,0,0.6); }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300">
+
+<!-- ===== AUTH PAGES ===== -->
+<div id="auth-container" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+  <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 50%, #1d4ed8 0%, transparent 50%), radial-gradient(circle at 80% 20%, #059669 0%, transparent 50%)"></div>
+  <div class="w-full max-w-md relative z-10 animate-slide-up">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 mb-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span class="font-display text-3xl text-white">FinVault</span>
+      </div>
+      <p class="text-slate-400 text-sm">Your personal finance command center</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form" class="bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700 shadow-2xl">
+      <h2 class="text-xl font-semibold text-white mb-6">Welcome back</h2>
+      <div id="login-error" class="hidden mb-4 p-3 bg-rose-900/40 border border-rose-700 rounded-lg text-rose-400 text-sm"></div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Email</label>
+          <input id="login-email" type="email" placeholder="you@example.com" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Password</label>
+          <input id="login-password" type="password" placeholder="••••••••" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <button onclick="handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 mt-2">Sign In</button>
+      </div>
+      <p class="mt-6 text-center text-slate-400 text-sm">Don't have an account? <button onclick="showRegister()" class="text-emerald-400 hover:text-emerald-300 font-medium">Create one</button></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" class="hidden bg-slate-800/80 backdrop-blur rounded-2xl p-8 border border-slate-700 shadow-2xl">
+      <h2 class="text-xl font-semibold text-white mb-6">Create account</h2>
+      <div id="register-error" class="hidden mb-4 p-3 bg-rose-900/40 border border-rose-700 rounded-lg text-rose-400 text-sm"></div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Full Name</label>
+          <input id="reg-name" type="text" placeholder="Jane Doe" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Email</label>
+          <input id="reg-email" type="email" placeholder="you@example.com" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Password</label>
+          <input id="reg-password" type="password" placeholder="Min. 6 characters" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-400 mb-1.5 block">Confirm Password</label>
+          <input id="reg-confirm" type="password" placeholder="••••••••" class="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+        </div>
+        <button onclick="handleRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 mt-2">Create Account</button>
+      </div>
+      <p class="mt-6 text-center text-slate-400 text-sm">Already have an account? <button onclick="showLogin()" class="text-emerald-400 hover:text-emerald-300 font-medium">Sign in</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app-container" class="hidden min-h-screen flex">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-700/50 flex-col fixed inset-y-0 left-0 z-30 hidden lg:flex">
+    <div class="p-6 border-b border-slate-700/50">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span class="font-display text-xl text-white">FinVault</span>
+      </div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1">
+      <button onclick="navigate('dashboard')" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium" data-page="dashboard">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </button>
+      <button onclick="navigate('transactions')" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium" data-page="transactions">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Transactions
+      </button>
+      <button onclick="navigate('add')" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium" data-page="add">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Transaction
+      </button>
+      <button onclick="navigate('budget')" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm font-medium" data-page="budget">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Budget
+      </button>
+    </nav>
+    <div class="p-4 border-t border-slate-700/50 space-y-3">
+      <div class="flex items-center justify-between px-2">
+        <span class="text-xs text-slate-500">Dark Mode</span>
+        <button onclick="toggleDark()" id="dark-toggle" class="relative w-11 h-6 bg-slate-700 rounded-full transition-colors duration-200 focus:outline-none">
+          <span id="dark-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></span>
+        </button>
+      </div>
+      <div class="px-2">
+        <p id="sidebar-user-name" class="text-sm font-medium text-slate-300 truncate"></p>
+        <p id="sidebar-user-email" class="text-xs text-slate-500 truncate mt-0.5"></p>
+      </div>
+      <button onclick="handleLogout()" class="w-full flex items-center gap-2 px-4 py-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 rounded-xl transition text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Header -->
+  <div class="lg:hidden fixed top-0 left-0 right-0 z-20 bg-slate-900 border-b border-slate-700/50 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <span class="font-display text-lg text-white">FinVault</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="toggleDark()" class="text-slate-400 hover:text-white">
+        <svg id="moon-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+      <button onclick="handleLogout()" class="text-rose-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <div class="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-slate-900 border-t border-slate-700/50 flex">
+    <button onclick="navigate('dashboard')" class="nav-link flex-1 flex flex-col items-center py-3 text-slate-400 hover:text-white text-xs gap-1" data-page="dashboard-mob">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Home
+    </button>
+    <button onclick="navigate('transactions')" class="nav-link flex-1 flex flex-col items-center py-3 text-slate-400 hover:text-white text-xs gap-1" data-page="transactions-mob">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      History
+    </button>
+    <button onclick="navigate('add')" class="nav-link flex-1 flex flex-col items-center py-3 text-slate-400 hover:text-white text-xs gap-1" data-page="add-mob">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Add
+    </button>
+    <button onclick="navigate('budget')" class="nav-link flex-1 flex flex-col items-center py-3 text-slate-400 hover:text-white text-xs gap-1" data-page="budget-mob">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Budget
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 overflow-auto">
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page p-4 lg:p-8 animate-fade-in">
+      <div class="mb-6">
+        <h1 class="font-display text-3xl dark:text-white text-slate-900">Dashboard</h1>
+        <p class="text-slate-500 text-sm mt-1">Your financial overview at a glance</p>
+      </div>
+
+      <!-- Budget Alert -->
+      <div id="budget-alert" class="hidden mb-6 p-4 bg-amber-900/40 border border-amber-600 rounded-2xl flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <div>
+          <p class="font-semibold text-amber-300 text-sm">Budget Limit Exceeded!</p>
+          <p id="budget-alert-msg" class="text-amber-400/80 text-xs mt-0.5"></p>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="income-gradient rounded-2xl p-5 text-white">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-emerald-300 text-sm font-medium">Total Income</span>
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+              <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+            </div>
+          </div>
+          <p id="dash-income" class="font-mono text-2xl font-semibold">₹0.00</p>
+        </div>
+        <div class="expense-gradient rounded-2xl p-5 text-white">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-rose-300 text-sm font-medium">Total Expenses</span>
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+              <svg class="w-4 h-4 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
+            </div>
+          </div>
+          <p id="dash-expenses" class="font-mono text-2xl font-semibold">₹0.00</p>
+        </div>
+        <div class="balance-gradient rounded-2xl p-5 text-white">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-blue-300 text-sm font-medium">Balance</span>
+            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+            </div>
+          </div>
+          <p id="dash-balance" class="font-mono text-2xl font-semibold">₹0.00</p>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">Expenses by Category</h2>
+          <div class="relative h-52">
+            <canvas id="pieChart"></canvas>
+            <div id="pie-empty" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">No expense data yet</div>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">Monthly Income vs Expenses</h2>
+          <div class="relative h-52">
+            <canvas id="barChart"></canvas>
+            <div id="bar-empty" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">No monthly data yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
+          <h2 class="font-semibold text-slate-700 dark:text-slate-200">Recent Transactions</h2>
+          <button onclick="navigate('transactions')" class="text-emerald-500 hover:text-emerald-400 text-sm font-medium">View all →</button>
+        </div>
+        <div id="recent-list" class="divide-y divide-slate-100 dark:divide-slate-700">
+          <div class="p-6 text-center text-slate-400 text-sm">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS PAGE -->
+    <div id="page-transactions" class="page p-4 lg:p-8 animate-fade-in">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="font-display text-3xl dark:text-white text-slate-900">Transactions</h1>
+          <p class="text-slate-500 text-sm mt-1">Full history of your financial activity</p>
+        </div>
+        <button onclick="exportCSV()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Export CSV
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 mb-6">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <input id="search-input" type="text" placeholder="Search..." oninput="loadTransactions()" class="col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition" />
+          <select id="filter-type" onchange="loadTransactions()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition">
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <select id="filter-category" onchange="loadTransactions()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition">
+            <option value="">All Categories</option>
+            <option>Food</option><option>Travel</option><option>Shopping</option>
+            <option>Salary</option><option>Education</option><option>Bills</option><option>Other</option>
+          </select>
+          <button onclick="clearFilters()" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition">Clear</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-left">
+                <th class="px-5 py-3.5 font-medium">Date</th>
+                <th class="px-5 py-3.5 font-medium">Type</th>
+                <th class="px-5 py-3.5 font-medium">Category</th>
+                <th class="px-5 py-3.5 font-medium">Description</th>
+                <th class="px-5 py-3.5 font-medium text-right">Amount</th>
+                <th class="px-5 py-3.5 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tx-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr><td colspan="6" class="px-5 py-8 text-center text-slate-400">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD TRANSACTION PAGE -->
+    <div id="page-add" class="page p-4 lg:p-8 animate-fade-in">
+      <div class="mb-6">
+        <h1 class="font-display text-3xl dark:text-white text-slate-900">Add Transaction</h1>
+        <p class="text-slate-500 text-sm mt-1">Record a new income or expense</p>
+      </div>
+      <div class="max-w-xl">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <div id="add-error" class="hidden mb-4 p-3 bg-rose-900/40 border border-rose-700 rounded-xl text-rose-400 text-sm"></div>
+          <div class="space-y-5">
+            <!-- Type toggle -->
+            <div>
+              <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">Transaction Type</label>
+              <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+                <button type="button" id="type-income" onclick="setType('income')" class="py-2.5 rounded-lg text-sm font-medium transition-all bg-emerald-600 text-white">Income</button>
+                <button type="button" id="type-expense" onclick="setType('expense')" class="py-2.5 rounded-lg text-sm font-medium transition-all text-slate-500 dark:text-slate-400">Expense</button>
+              </div>
+              <input type="hidden" id="tx-type" value="income" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Amount (₹)</label>
+                <input id="tx-amount" type="number" step="0.01" min="0.01" placeholder="0.00" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono" />
+              </div>
+              <div>
+                <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Date</label>
+                <input id="tx-date" type="date" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Category</label>
+              <select id="tx-category" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+                <option value="">Select category</option>
+                <option>Food</option><option>Travel</option><option>Shopping</option>
+                <option>Salary</option><option>Education</option><option>Bills</option><option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Description <span class="text-slate-400 font-normal">(optional)</span></label>
+              <textarea id="tx-desc" rows="3" placeholder="What was this for?" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition resize-none"></textarea>
+            </div>
+            <button onclick="submitTransaction()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200">
+              Add Transaction
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET PAGE -->
+    <div id="page-budget" class="page p-4 lg:p-8 animate-fade-in">
+      <div class="mb-6">
+        <h1 class="font-display text-3xl dark:text-white text-slate-900">Budget</h1>
+        <p class="text-slate-500 text-sm mt-1">Set and monitor your monthly spending limit</p>
+      </div>
+      <div class="max-w-md">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 mb-6">
+          <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">Monthly Budget Limit</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Set Budget (₹)</label>
+              <input id="budget-input" type="number" step="100" min="0" placeholder="e.g. 50000" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition font-mono" />
+            </div>
+            <button onclick="saveBudget()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition">Save Budget</button>
+          </div>
+        </div>
+
+        <!-- Budget Status -->
+        <div id="budget-status" class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">This Month's Status</h2>
+          <div class="space-y-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">Budget Limit</span>
+              <span id="bs-limit" class="font-mono font-semibold dark:text-white">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">Total Expenses</span>
+              <span id="bs-spent" class="font-mono font-semibold text-rose-500">₹0.00</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">Remaining</span>
+              <span id="bs-remaining" class="font-mono font-semibold text-emerald-500">₹0.00</span>
+            </div>
+            <div class="mt-3">
+              <div class="h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div id="bs-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-700" style="width:0%"></div>
+              </div>
+              <p id="bs-pct" class="text-xs text-slate-400 mt-1.5 text-right">0% used</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-slide-up">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-slate-800 dark:text-white text-lg">Edit Transaction</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="edit-id" />
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+        <button type="button" id="edit-type-income" onclick="setEditType('income')" class="py-2 rounded-lg text-sm font-medium transition-all">Income</button>
+        <button type="button" id="edit-type-expense" onclick="setEditType('expense')" class="py-2 rounded-lg text-sm font-medium transition-all">Expense</button>
+      </div>
+      <input type="hidden" id="edit-type" />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Amount</label>
+          <input id="edit-amount" type="number" step="0.01" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition font-mono" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Date</label>
+          <input id="edit-date" type="date" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition" />
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 mb-1 block">Category</label>
+        <select id="edit-category" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition">
+          <option>Food</option><option>Travel</option><option>Shopping</option>
+          <option>Salary</option><option>Education</option><option>Bills</option><option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 mb-1 block">Description</label>
+        <input id="edit-desc" type="text" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:outline-none focus:border-emerald-500 transition" />
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button onclick="closeModal()" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition">Cancel</button>
+        <button onclick="saveEdit()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden">
+  <div id="toast-inner" class="px-4 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center gap-2"></div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -141,13 +141,6 @@ CREATE TABLE transactions (
 
 ## Screenshots
 
-| Page | Description |
-|------|-------------|
-| Login/Register | Clean dark auth screen with animated transitions |
-| Dashboard | Stats cards + Pie Chart + Bar Chart + Recent transactions |
-| Transactions | Searchable, filterable table with edit/delete actions |
-| Add Transaction | Income/Expense toggle form |
-| Budget | Progress bar with limit alert |
 
 ---
 
